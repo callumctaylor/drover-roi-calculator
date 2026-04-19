@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Fencing ROI Calculator — Drover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --green: #2D6A4F; --green-light: #52B788; --green-dark: #1B4332; --amber: #F4A261; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #F4F7F5; }
+    .brand-grad { background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 55%, #40916C 100%); }
+
+    /* Wizard */
+    .op-card { border: 2.5px solid #E2EDE8; border-radius: 14px; cursor: pointer; transition: all .18s; background: white; }
+    .op-card:hover { border-color: #52B788; box-shadow: 0 4px 16px rgba(82,183,136,.2); }
+    .op-card.selected { border-color: #2D6A4F; background: #F0FAF5; box-shadow: 0 4px 20px rgba(45,106,79,.2); }
+    .goal-card { border: 2.5px solid #E2EDE8; border-radius: 12px; cursor: pointer; transition: all .18s; background: white; padding: 16px; }
+    .goal-card:hover { border-color: #52B788; }
+    .goal-card.selected { border-color: #2D6A4F; background: #F0FAF5; }
+    .goal-card .check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #CBD5E1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .goal-card.selected .check { background: #2D6A4F; border-color: #2D6A4F; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1; transition: background .2s; }
+    .step-dot.active { background: #2D6A4F; }
+
+    /* Profile chips */
+    .profile-chip { padding: 8px 18px; border-radius: 999px; border: 2px solid #E2EDE8; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; white-space: nowrap; }
+    .profile-chip:hover { border-color: #52B788; }
+    .profile-chip.active { border-color: #2D6A4F; background: #2D6A4F; color: white; }
+
+    /* Calculator */
+    .section-card { background: white; border-radius: 12px; border: 1px solid #E2EDE8; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    .param-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #F0F4F1; gap: 12px; }
+    .param-row:last-child { border-bottom: none; }
+    .param-label { font-size: 13px; color: #4B5563; flex: 1; }
+    .param-label .unit { font-size: 11px; color: #9CA3AF; }
+    input[type=number] { border: 1.5px solid #D1E8DC; border-radius: 7px; padding: 5px 9px; width: 100px; font-size: 13px; text-align: right; color: #1B4332; background: white; }
+    input[type=number]:focus { outline: none; border-color: #2D6A4F; box-shadow: 0 0 0 2px rgba(45,106,79,.12); }
+    select { border: 1.5px solid #D1E8DC; border-radius: 7px; padding: 5px 9px; font-size: 13px; color: #1B4332; background: white; }
+    select:focus { outline: none; border-color: #2D6A4F; }
+
+    /* Tooltips */
+    .tip { position: relative; display: inline-flex; align-items: center; cursor: help; }
+    .tip-icon { width: 15px; height: 15px; border-radius: 50%; background: #E2EDE8; color: #6B7280; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; flex-shrink: 0; }
+    .tip .tip-text { visibility: hidden; background: #1B4332; color: white; padding: 7px 11px; border-radius: 8px; position: absolute; z-index: 20; width: 210px; font-size: 11px; line-height: 1.5; bottom: 130%; left: 0; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    .tip:hover .tip-text { visibility: visible; opacity: 1; }
+
+    /* Results */
+    .metric-box { border-radius: 10px; padding: 14px 16px; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }
+    .section-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .chevron { transition: transform .2s; }
+    .chevron.collapsed { transform: rotate(-90deg); }
+    .collapsible { overflow: hidden; transition: max-height .3s ease; }
+
+    /* Drover callout box */
+    .drover-box { background: #F0FAF5; border: 1.5px solid #B7E4C7; border-radius: 10px; padding: 14px 16px; }
+    .drover-stat { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+    .drover-divider { border-top: 1px dashed #B7E4C7; margin: 8px 0; }
+
+    /* Expand-yes toggle */
+    .yn-btn { padding: 7px 18px; border-radius: 8px; border: 2px solid #E2EDE8; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; }
+    .yn-btn.yes-active { border-color: #2D6A4F; background: #2D6A4F; color: white; }
+    .yn-btn.no-active  { border-color: #DC2626; background: #FEF2F2; color: #DC2626; }
+
+    /* Section number badge */
+    .sec-num { min-width: 28px; height: 28px; border-radius: 8px; background: #2D6A4F; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .sec-num.goal { background: #F4A261; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ───────────────── HEADER ───────────────── -->
+<header class="brand-grad text-white py-7 px-6">
+  <div class="max-w-6xl mx-auto flex items-start justify-between">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect width="26" height="26" rx="6" fill="rgba(255,255,255,.18)"/><path d="M5 19l6-10 4 6 3-3 3 7H5Z" fill="white" opacity=".9"/><circle cx="19" cy="8" r="2.5" fill="#F4A261"/></svg>
+        <span class="text-xs font-semibold tracking-widest opacity-70 uppercase">Drover</span>
+      </div>
+      <h1 class="text-2xl font-bold leading-tight">Virtual Fencing ROI Calculator</h1>
+      <p class="text-sm opacity-75 mt-1">Tailored to your operation — see your real return on investment</p>
+    </div>
+  </div>
+</header>
+
+<!-- ───────────────── WIZARD ───────────────── -->
+<div id="wizard" class="max-w-3xl mx-auto px-4 py-8">
+  <div class="flex justify-center gap-2 mb-8" id="step-dots">
+    <div class="step-dot active" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+  </div>
+
+  <!-- Step 1: Operation Type -->
+  <div id="step-1">
+    <h2 class="text-xl font-bold text-gray-800 text-center mb-1">What type of operation are you running?</h2>
+    <p class="text-sm text-gray-500 text-center mb-6">This sets the right parameters for your calculator</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div class="op-card p-6 text-center" onclick="selectOpType('stocker')">
+        <div class="text-4xl mb-3">🌾</div>
+        <div class="font-bold text-gray-800 text-base mb-1">Stocker Operation</div>
+        <div class="text-xs text-gray-500 leading-relaxed">Buy lightweight calves or yearlings, graze on grass to gain weight, then sell heavier. Revenue comes from weight gain efficiency.</div>
+      </div>
+      <div class="op-card p-6 text-center" onclick="selectOpType('cowcalf')">
+        <div class="text-4xl mb-3">🐄</div>
+        <div class="font-bold text-gray-800 text-base mb-1">Cow-Calf Operation</div>
+        <div class="text-xs text-gray-500 leading-relaxed">Maintain a permanent cow herd that produces calves each year. Revenue from calf sales. Winter hay feeding is a major cost driver.</div>
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button onclick="goStep(2)" id="step1-next" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white opacity-40 cursor-not-allowed" style="background:#2D6A4F" disabled>
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Goals -->
+  <div id="step-2" style="display:none">
+    <h2 class="text-xl font-bold text-gray-800 text-center mb-1">What are you looking to achieve?</h2>
+    <p class="text-sm text-gray-500 text-center mb-6">Select all that apply — the calculator will model each benefit</p>
+    <div class="flex flex-col gap-3 mb-6">
+      <div class="goal-card" onclick="toggleGoal('carrying_capacity', this)">
+        <div class="flex items-start gap-3">
+          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-carrying_capacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div>
+            <div class="font-semibold text-gray-800 text-sm mb-0.5">📈 Increase Carrying Capacity</div>
+            <div class="text-xs text-gray-500 leading-relaxed">Better rotational grazing through precise paddock management lets you stock more animals on the same land — without overgrazing. Typical improvement: 20–35%.</div>
+          </div>
+        </div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal('hay_reduction', this)">
+        <div class="flex items-start gap-3">
+          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-hay_reduction" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div>
+            <div class="font-semibold text-gray-800 text-sm mb-0.5">🌿 Reduce Hay &amp; Feed Costs</div>
+            <div class="text-xs text-gray-500 leading-relaxed">Optimized grazing patterns extend your grass season, reduce overgrazing and waste, and lower dependency on expensive hay and supplements — especially valuable in hard winters.</div>
+          </div>
+        </div>
+      </div>
+      <div class="goal-card" onclick="toggleGoal('hold_longer', this)">
+        <div class="flex items-start gap-3">
+          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-hold_longer" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div>
+            <div class="font-semibold text-gray-800 text-sm mb-0.5">⚖️ <span id="hold-goal-label">Hold Animals Longer for More Weight</span></div>
+            <div class="text-xs text-gray-500 leading-relaxed" id="hold-goal-desc">Retain stockers additional weeks to capture more weight gain before selling. Better pasture condition through rotational management supports sustained ADG into the later grazing period.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-between">
+      <button onclick="goStep(1)" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700">← Back</button>
+      <button onclick="goStep(3)" id="step2-next" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white opacity-40 cursor-not-allowed" style="background:#2D6A4F" disabled>
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Area Expansion -->
+  <div id="step-3" style="display:none">
+    <h2 class="text-xl font-bold text-gray-800 text-center mb-1">Could you add more grazing area?</h2>
+    <p class="text-sm text-gray-500 text-center mb-6">Virtual fencing makes adding leased land practical with no fence infrastructure needed</p>
+    <div class="flex justify-center gap-4 mb-5">
+      <button class="yn-btn" id="btn-yes" onclick="setExpand(true)">Yes, I could add land</button>
+      <button class="yn-btn" id="btn-no" onclick="setExpand(false)">No, I'm land-limited</button>
+    </div>
+    <div id="expand-inputs" style="display:none" class="section-card p-5 mb-5">
+      <div class="param-row">
+        <label class="param-label">Additional acres accessible <span class="unit">(acres)</span></label>
+        <input type="number" id="wiz-additionalAcres" value="200" min="0" max="50000" step="50" />
+      </div>
+      <div class="param-row">
+        <label class="param-label">Annual lease cost <span class="unit">($/acre/yr — enter 0 if already owned)</span></label>
+        <input type="number" id="wiz-leaseCost" value="20" min="0" max="200" step="5" />
+      </div>
+    </div>
+    <div class="flex justify-between">
+      <button onclick="goStep(2)" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700">← Back</button>
+      <button onclick="completeWizard()" id="step3-next" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white opacity-40 cursor-not-allowed" style="background:#2D6A4F" disabled>
+        Build My Calculator →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────── CALCULATOR ───────────────── -->
+<div id="calculator" style="display:none" class="max-w-6xl mx-auto px-4 pb-16">
+
+  <!-- Profile Selector -->
+  <div class="mb-5">
+    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Start with a regional profile, then fine-tune</div>
+    <div class="flex flex-wrap gap-2" id="profile-row">
+      <button class="profile-chip" onclick="applyProfile('texas_cowcalf')" id="chip-texas_cowcalf">🤠 Texas Cow-Calf</button>
+      <button class="profile-chip" onclick="applyProfile('nebraska_stocker')" id="chip-nebraska_stocker">🌾 Nebraska Stocker</button>
+      <button class="profile-chip" onclick="applyProfile('montana_cowcalf')" id="chip-montana_cowcalf">🏔️ Montana Cow-Calf</button>
+      <button class="profile-chip active" onclick="applyProfile('custom')" id="chip-custom">✏️ Custom</button>
+    </div>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-5">
+    <!-- ── LEFT: Input Sections ── -->
+    <div class="flex-1 flex flex-col gap-4">
+
+      <!-- Section 1: Your Operation -->
+      <div class="section-card p-5">
+        <div class="section-toggle mb-3" onclick="toggleSec('op')">
+          <div class="sec-num">1</div>
+          <h2 class="font-semibold text-gray-800" id="op-title">Your Operation</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="op-content" style="max-height:1200px">
+
+          <!-- COW-CALF fields -->
+          <div id="cowcalf-fields">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+              <div>
+                <div class="param-row">
+                  <label class="param-label">Farm / ranch size <span class="unit">(acres)</span></label>
+                  <input type="number" id="farmArea" value="1000" min="50" max="500000" step="50" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Number of breeding cows</label>
+                  <input type="number" id="numCows" value="50" min="5" max="10000" step="5" onchange="syncTags(); calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Calf weaning weight <span class="unit">(lbs)</span></label>
+                  <input type="number" id="weaningWeight" value="550" min="100" max="900" step="10" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Calf sale price <span class="unit">($/lb)</span></label>
+                  <input type="number" id="calfPrice" value="2.90" min="0.50" max="6.00" step="0.05" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Conception / pregnancy rate
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of cows that become pregnant and produce a live calf. National avg is ~80%; well-managed herds reach 88–92%.</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="conceptionRate" value="80" min="40" max="100" step="1" onchange="calc()" />
+                </div>
+              </div>
+              <div>
+                <div class="param-row">
+                  <label class="param-label">Calf mortality
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of calves lost from birth to weaning (industry avg 3–5%).</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="calfMortality" value="4" min="0" max="20" step="0.5" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Calf ADG on grass <span class="unit">(lbs/day)</span></label>
+                  <input type="number" id="calfADG" value="1.8" min="0.5" max="4.0" step="0.1" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Days calves graze before weaning</label>
+                  <input type="number" id="daysGrazing" value="180" min="60" max="365" step="10" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Stock loss rate
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of weaned calves lost post-weaning before sale (death, theft, missing).</span></span>
+                    <span class="unit">(%/yr)</span>
+                  </label>
+                  <input type="number" id="stockLossCC" value="2.5" min="0" max="15" step="0.5" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">VF ADG improvement
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Better pasture quality from rotational grazing leads to heavier calves at weaning. Research supports 5–10% improvement.</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="adgImprovCC" value="8" min="0" max="25" step="1" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Conception improvement from VF
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Better body condition from managed grazing can lift conception 2–4 percentage points. Enter as percentage points (not %).</span></span>
+                    <span class="unit">(pp)</span>
+                  </label>
+                  <input type="number" id="conceptionImprov" value="3" min="0" max="15" step="1" onchange="calc()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STOCKER fields -->
+          <div id="stocker-fields" style="display:none">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+              <div>
+                <div class="param-row">
+                  <label class="param-label">Farm / ranch size <span class="unit">(acres)</span></label>
+                  <input type="number" id="farmAreaSt" value="700" min="50" max="500000" step="50" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Stockers per turn</label>
+                  <input type="number" id="numStockers" value="280" min="10" max="10000" step="10" onchange="syncTags(); calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Purchase weight <span class="unit">(lbs/head)</span></label>
+                  <input type="number" id="buyWeight" value="550" min="200" max="900" step="10" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Purchase price
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Price per pound paid for incoming stockers. Current NE market ~$3.30/lb for 550 lb calves.</span></span>
+                    <span class="unit">($/lb)</span>
+                  </label>
+                  <input type="number" id="buyPrice" value="3.30" min="0.50" max="8.00" step="0.05" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Target sell weight <span class="unit">(lbs/head)</span></label>
+                  <input type="number" id="sellWeight" value="775" min="400" max="1200" step="10" onchange="calc()" />
+                </div>
+              </div>
+              <div>
+                <div class="param-row">
+                  <label class="param-label">Sell price
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Price per pound at sale. Heavier feeders typically receive slightly lower $/lb. Current NE market ~$2.70/lb for 775 lb feeders.</span></span>
+                    <span class="unit">($/lb)</span>
+                  </label>
+                  <input type="number" id="sellPrice" value="2.70" min="0.50" max="8.00" step="0.05" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">ADG on grass <span class="unit">(lbs/day)</span></label>
+                  <input type="number" id="stockerADG" value="1.7" min="0.5" max="4.0" step="0.1" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Days on grass per turn</label>
+                  <input type="number" id="daysOnGrass" value="130" min="30" max="365" step="5" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Turns per year</label>
+                  <input type="number" id="turnsPerYear" value="1" min="1" max="4" step="1" onchange="syncTags(); calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">Stock loss rate <span class="unit">(%/yr)</span></label>
+                  <input type="number" id="stockLossSt" value="1.5" min="0" max="10" step="0.5" onchange="calc()" />
+                </div>
+                <div class="param-row">
+                  <label class="param-label">VF ADG improvement
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Rotational grazing improves grass quality and utilization. Studies show 15–25% ADG improvement vs continuous grazing.</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="adgImprovSt" value="15" min="0" max="35" step="1" onchange="calc()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 2: Infrastructure -->
+      <div class="section-card p-5">
+        <div class="section-toggle mb-3" onclick="toggleSec('infra')">
+          <div class="sec-num">2</div>
+          <h2 class="font-semibold text-gray-800">Current Infrastructure &amp; Labor</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="infra-content" style="max-height:1200px">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div>
+              <div class="param-row">
+                <label class="param-label">Existing fence length <span class="unit">(miles)</span></label>
+                <input type="number" id="fenceLength" value="15" min="0" max="2000" step="1" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">New fence install cost <span class="unit">($/mile)</span></label>
+                <input type="number" id="fenceInstall" value="8000" min="1000" max="60000" step="500" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Annual fence maintenance <span class="unit">($/mile/yr)</span></label>
+                <input type="number" id="fenceMaint" value="500" min="0" max="5000" step="50" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Fence lifespan <span class="unit">(years)</span></label>
+                <input type="number" id="fenceLife" value="20" min="5" max="50" step="1" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Desired rotational paddocks
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">How many paddocks you'd need for optimal rotational grazing. Virtual fencing lets you create these without physical fence.</span></span>
+                </label>
+                <input type="number" id="desiredPaddocks" value="10" min="2" max="200" step="1" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Current physical paddocks</label>
+                <input type="number" id="currentPaddocks" value="3" min="1" max="200" step="1" onchange="calc()" />
+              </div>
+            </div>
+            <div>
+              <div class="param-row">
+                <label class="param-label">Annual mustering labor <span class="unit">(hrs/yr)</span></label>
+                <input type="number" id="musterHours" value="40" min="0" max="2000" step="5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Fence checking &amp; repair labor <span class="unit">(hrs/yr)</span></label>
+                <input type="number" id="fenceCheckHours" value="25" min="0" max="2000" step="5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Labor cost <span class="unit">($/hr)</span></label>
+                <input type="number" id="laborCost" value="28" min="10" max="200" step="2" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Fuel &amp; vehicle costs <span class="unit">($/yr)</span>
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Annual fuel/vehicle cost for mustering, fence checks, and general ranch work that VF can reduce.</span></span>
+                </label>
+                <input type="number" id="fuelCost" value="2500" min="0" max="50000" step="250" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Mustering time saved with VF
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">GPS location and virtual herding reduce mustering time. Typical: 50–70%.</span></span>
+                  <span class="unit">(%)</span>
+                </label>
+                <input type="number" id="musterSaved" value="60" min="0" max="100" step="5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Fence time saved with VF <span class="unit">(%)</span></label>
+                <input type="number" id="fenceSaved" value="90" min="0" max="100" step="5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Fuel reduction with VF <span class="unit">(%)</span></label>
+                <input type="number" id="fuelSaved" value="45" min="0" max="100" step="5" onchange="calc()" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Drover Investment -->
+      <div class="section-card p-5">
+        <div class="section-toggle mb-4" onclick="toggleSec('drover')">
+          <div class="sec-num">3</div>
+          <h2 class="font-semibold text-gray-800">Drover Ear Tag Investment</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="drover-content" style="max-height:600px">
+          <div class="param-row mb-3">
+            <label class="param-label font-medium">Number of ear tags needed</label>
+            <input type="number" id="numTags" value="50" min="1" max="20000" step="5" onchange="calc()" />
+          </div>
+          <div class="drover-box mt-2" id="drover-breakdown">
+            <!-- filled by JS -->
+          </div>
+          <div class="grid grid-cols-3 gap-3 mt-3">
+            <div class="text-center text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+              <div class="text-lg mb-0.5">☀️</div>Solar powered — no battery costs
+            </div>
+            <div class="text-center text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+              <div class="text-lg mb-0.5">📡</div>No base stations or setup fees
+            </div>
+            <div class="text-center text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+              <div class="text-lg mb-0.5">🏷️</div>Ear tag — not a collar. Easy fitment.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal: Carrying Capacity -->
+      <div class="section-card p-5 goal-section" id="goal-carrying_capacity" style="display:none">
+        <div class="section-toggle mb-3" onclick="toggleSec('cc')">
+          <div class="sec-num goal">G</div>
+          <h2 class="font-semibold text-gray-800">📈 Carrying Capacity</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="cc-content" style="max-height:600px">
+          <p class="text-xs text-gray-500 mb-3 bg-amber-50 border border-amber-100 rounded-lg p-2">Improved rotational grazing typically allows 20–35% more animals on the same land. University research supports 25–40% improvement vs continuous grazing.</p>
+          <div class="param-row">
+            <label class="param-label">Stocking rate improvement
+              <span class="tip"><span class="tip-icon">?</span><span class="tip-text">How many % more animals you can run with precise rotational grazing. Research: 25–40% above continuous grazing baseline.</span></span>
+              <span class="unit">(%)</span>
+            </label>
+            <input type="number" id="ccImprovement" value="25" min="0" max="60" step="1" onchange="calc()" />
+          </div>
+          <!-- Stocker only: net margin per additional head -->
+          <div class="param-row" id="cc-stocker-margin" style="display:none">
+            <label class="param-label">Net margin per additional stocker
+              <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Your estimated net profit per additional head after purchase cost, grass lease, and operating expenses. Typically $80–180/head for Nebraska grass operations.</span></span>
+              <span class="unit">($)</span>
+            </label>
+            <input type="number" id="ccNetMargin" value="100" min="0" max="1000" step="10" onchange="calc()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal: Hay & Feed -->
+      <div class="section-card p-5 goal-section" id="goal-hay_reduction" style="display:none">
+        <div class="section-toggle mb-3" onclick="toggleSec('hay')">
+          <div class="sec-num goal">G</div>
+          <h2 class="font-semibold text-gray-800">🌿 Hay &amp; Feed Savings</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="hay-content" style="max-height:700px">
+          <p class="text-xs text-gray-500 mb-3 bg-amber-50 border border-amber-100 rounded-lg p-2">Optimized rotational grazing extends your grass season and reduces hay dependency. NRCS research shows 60–80% hay reduction possible with stockpiling and careful rotation.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div>
+              <div class="param-row">
+                <label class="param-label" id="hay-per-label">Hay fed per cow per year
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Texas avg: 3–4 tons/cow/yr. Montana: 4–5 tons/cow/yr. Seasonal stocker ops: often near zero.</span></span>
+                  <span class="unit">(tons/animal/yr)</span>
+                </label>
+                <input type="number" id="hayPerAnimal" value="3.5" min="0" max="20" step="0.25" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Hay price <span class="unit">($/ton)</span></label>
+                <input type="number" id="hayPrice" value="175" min="0" max="600" step="10" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Supplement cost
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Range cubes, mineral tubs, protein blocks, etc. Texas avg: $50–75/cow/yr.</span></span>
+                  <span class="unit">($/animal/yr)</span>
+                </label>
+                <input type="number" id="suppPerAnimal" value="65" min="0" max="500" step="5" onchange="calc()" />
+              </div>
+            </div>
+            <div>
+              <div class="param-row">
+                <label class="param-label">Hay reduction from VF
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Conservative: 20–30% from better fall grazing. With active stockpiling management: 40–60%.</span></span>
+                  <span class="unit">(%)</span>
+                </label>
+                <input type="number" id="hayReduction" value="30" min="0" max="80" step="5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Supplement reduction from VF <span class="unit">(%)</span></label>
+                <input type="number" id="suppReduction" value="20" min="0" max="80" step="5" onchange="calc()" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal: Hold Longer -->
+      <div class="section-card p-5 goal-section" id="goal-hold_longer" style="display:none">
+        <div class="section-toggle mb-3" onclick="toggleSec('hold')">
+          <div class="sec-num goal">G</div>
+          <h2 class="font-semibold text-gray-800" id="hold-section-title">⚖️ Extended Grazing</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="hold-content" style="max-height:700px">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div>
+              <div class="param-row">
+                <label class="param-label">Additional days to hold <span class="unit">(days)</span></label>
+                <input type="number" id="extendDays" value="21" min="0" max="180" step="7" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">ADG during extended hold <span class="unit">(lbs/day)</span></label>
+                <input type="number" id="extendADG" value="1.6" min="0.2" max="4.0" step="0.1" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Sell price at heavier weight
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Heavier cattle often get slightly lower $/lb at the feedlot, but total revenue per head increases. Common: 3–8 cents less/lb for every 100 lbs over target.</span></span>
+                  <span class="unit">($/lb)</span>
+                </label>
+                <input type="number" id="extendSellPrice" value="2.60" min="0.50" max="8.00" step="0.05" onchange="calc()" />
+              </div>
+            </div>
+            <div>
+              <div class="param-row">
+                <label class="param-label">Daily holding cost per animal
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Cost of grass (lease), water, minerals, and overhead per animal per day during the extended hold. Typical: $1.00–2.50/head/day.</span></span>
+                  <span class="unit">($/animal/day)</span>
+                </label>
+                <input type="number" id="holdCostDay" value="1.50" min="0" max="20" step="0.25" onchange="calc()" />
+              </div>
+              <div class="param-row" id="extend-tags-row">
+                <label class="param-label">Additional tags for retained animals
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">For cow-calf: if you're retaining calves, they'll need Drover tags too. Enter the number of calves you plan to retain for extended grazing.</span></span>
+                </label>
+                <input type="number" id="extendTags" value="0" min="0" max="10000" step="5" onchange="calc()" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expansion Section -->
+      <div class="section-card p-5" id="expand-section" style="display:none">
+        <div class="section-toggle mb-3" onclick="toggleSec('expand')">
+          <div class="sec-num goal">G</div>
+          <h2 class="font-semibold text-gray-800">🗺️ Area Expansion</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="expand-content" style="max-height:500px">
+          <p class="text-xs text-gray-500 mb-3 bg-amber-50 border border-amber-100 rounded-lg p-2">Virtual fencing means you can graze leased land without building infrastructure — dramatically improving the economics of expansion.</p>
+          <div class="param-row">
+            <label class="param-label">Additional acres to add <span class="unit">(acres)</span></label>
+            <input type="number" id="expandAcres" value="200" min="0" max="100000" step="50" onchange="calc()" />
+          </div>
+          <div class="param-row">
+            <label class="param-label">Annual lease cost <span class="unit">($/acre/yr, or 0 if owned)</span></label>
+            <input type="number" id="expandLease" value="20" min="0" max="200" step="5" onchange="calc()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Financial -->
+      <div class="section-card p-5">
+        <div class="section-toggle mb-3" onclick="toggleSec('fin')">
+          <div class="sec-num">4</div>
+          <h2 class="font-semibold text-gray-800">Financial Parameters</h2>
+          <svg class="chevron ml-auto w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="collapsible" id="fin-content" style="max-height:500px">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+            <div>
+              <div class="param-row">
+                <label class="param-label">Analysis period <span class="unit">(years)</span></label>
+                <input type="number" id="analysisPeriod" value="10" min="1" max="30" step="1" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Discount rate
+                  <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Your cost of capital or hurdle rate. Typical ranch operations: 6–10%.</span></span>
+                  <span class="unit">(%)</span>
+                </label>
+                <input type="number" id="discountRate" value="8" min="0" max="30" step="0.5" onchange="calc()" />
+              </div>
+            </div>
+            <div>
+              <div class="param-row">
+                <label class="param-label">Inflation rate <span class="unit">(%)</span></label>
+                <input type="number" id="inflationRate" value="3" min="0" max="15" step="0.5" onchange="calc()" />
+              </div>
+              <div class="param-row">
+                <label class="param-label">Tax rate <span class="unit">(%)</span></label>
+                <input type="number" id="taxRate" value="25" min="0" max="50" step="2.5" onchange="calc()" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end left column -->
+
+    <!-- ── RIGHT: Results ── -->
+    <div class="w-full lg:w-96 flex flex-col gap-4">
+      <div class="lg:sticky lg:top-4 flex flex-col gap-4">
+
+        <!-- Key Metrics -->
+        <div class="section-card p-5">
+          <h2 class="font-semibold text-gray-800 mb-4">Results Summary</h2>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="metric-box" style="background:#E8F5EE">
+              <div class="text-xs text-gray-500 mb-1">Simple Payback</div>
+              <div class="text-2xl font-bold" style="color:#1B4332" id="res-payback">—</div>
+              <div class="text-xs text-gray-400">years</div>
+            </div>
+            <div class="metric-box" style="background:#E8F5EE">
+              <div class="text-xs text-gray-500 mb-1" id="res-npv-label">10-Year NPV</div>
+              <div class="text-2xl font-bold" style="color:#1B4332" id="res-npv">—</div>
+              <div class="text-xs text-gray-400" id="res-npv-sub">discounted</div>
+            </div>
+            <div class="metric-box" style="background:#FFF8F0">
+              <div class="text-xs text-gray-500 mb-1">Net Annual Gain</div>
+              <div class="text-xl font-bold" style="color:#C2410C" id="res-annual">—</div>
+              <div class="text-xs text-gray-400">Year 1</div>
+            </div>
+            <div class="metric-box" style="background:#FFF8F0">
+              <div class="text-xs text-gray-500 mb-1">ROI</div>
+              <div class="text-xl font-bold" style="color:#C2410C" id="res-roi">—</div>
+              <div class="text-xs text-gray-400" id="res-roi-sub">over period</div>
+            </div>
+          </div>
+
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Annual Benefit Breakdown</div>
+          <div id="res-breakdown" class="space-y-1.5 mb-3 text-sm"></div>
+
+          <div class="border-t border-gray-100 pt-3 space-y-1">
+            <div class="result-row font-semibold">
+              <span>Total Annual Benefit</span>
+              <span style="color:#2D6A4F" id="res-total-benefit">—</span>
+            </div>
+            <div class="result-row">
+              <span class="text-gray-500">Drover Annual Cost</span>
+              <span class="text-red-600 font-medium" id="res-drover-cost">—</span>
+            </div>
+            <div class="result-row font-semibold border-t border-gray-100 pt-1">
+              <span>Net Annual Gain</span>
+              <span id="res-net-gain" class="font-bold">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cashflow Chart -->
+        <div class="section-card p-5">
+          <h2 class="font-semibold text-gray-800 mb-3">Cumulative Cashflow</h2>
+          <canvas id="cashflowChart" height="200"></canvas>
+        </div>
+
+        <!-- Benefit Mix -->
+        <div class="section-card p-5">
+          <h2 class="font-semibold text-gray-800 mb-3">What's Driving Your ROI</h2>
+          <canvas id="benefitChart" height="200"></canvas>
+        </div>
+
+        <!-- Investment Summary -->
+        <div class="section-card p-5">
+          <h2 class="font-semibold text-gray-800 mb-3">Investment Summary</h2>
+          <div id="res-invest" class="space-y-1.5 text-sm"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div><!-- end calculator -->
+
+<script>
+// ─── DROVER FIXED PRICING ───────────────────────────────────────────
+const DROVER = { tagCost: 99, annualSub: 60, annualSupport: 1000, lifespan: 5 };
+
+// ─── STATE ──────────────────────────────────────────────────────────
+const STATE = {
+  opType:   null,           // 'stocker' | 'cowcalf'
+  goals:    new Set(),
+  canExpand: null,
+};
+
+// ─── PRESETS ─────────────────────────────────────────────────────────
+const PRESETS = {
+  texas_cowcalf: {
+    opType: 'cowcalf',
+    // Operation
+    farmArea: 1000, numCows: 50, weaningWeight: 550, calfPrice: 2.90,
+    conceptionRate: 80, calfMortality: 4, calfADG: 1.8, daysGrazing: 180,
+    stockLossCC: 2.5, adgImprovCC: 8, conceptionImprov: 3,
+    // Infra
+    fenceLength: 15, fenceInstall: 8000, fenceMaint: 500, fenceLife: 20,
+    desiredPaddocks: 10, currentPaddocks: 3,
+    musterHours: 40, fenceCheckHours: 20, laborCost: 28, fuelCost: 2000,
+    musterSaved: 60, fenceSaved: 90, fuelSaved: 45,
+    // Drover
+    numTags: 50,
+    // Carrying capacity
+    ccImprovement: 25,
+    // Hay
+    hayPerAnimal: 3.5, hayPrice: 175, suppPerAnimal: 65, hayReduction: 30, suppReduction: 20,
+    // Hold longer
+    extendDays: 0, extendADG: 1.6, extendSellPrice: 2.75, holdCostDay: 1.50, extendTags: 0,
+    // Expansion
+    expandAcres: 200, expandLease: 12,
+    // Financial
+    analysisPeriod: 10, discountRate: 8, inflationRate: 3, taxRate: 25,
+  },
+  nebraska_stocker: {
+    opType: 'stocker',
+    farmArea: 700, farmAreaSt: 700, numStockers: 280,
+    buyWeight: 550, buyPrice: 3.30, sellWeight: 775, sellPrice: 2.70,
+    stockerADG: 1.7, daysOnGrass: 130, turnsPerYear: 1,
+    stockLossSt: 1.5, adgImprovSt: 15,
+    fenceLength: 10, fenceInstall: 7000, fenceMaint: 400, fenceLife: 20,
+    desiredPaddocks: 14, currentPaddocks: 4,
+    musterHours: 30, fenceCheckHours: 20, laborCost: 28, fuelCost: 2000,
+    musterSaved: 60, fenceSaved: 90, fuelSaved: 45,
+    numTags: 280,
+    ccImprovement: 25, ccNetMargin: 110,
+    hayPerAnimal: 0, hayPrice: 160, suppPerAnimal: 30, hayReduction: 0, suppReduction: 0,
+    extendDays: 21, extendADG: 1.6, extendSellPrice: 2.60, holdCostDay: 1.50, extendTags: 0,
+    expandAcres: 150, expandLease: 35,
+    analysisPeriod: 10, discountRate: 8, inflationRate: 3, taxRate: 25,
+  },
+  montana_cowcalf: {
+    opType: 'cowcalf',
+    farmArea: 5000, numCows: 200, weaningWeight: 550, calfPrice: 2.90,
+    conceptionRate: 85, calfMortality: 3, calfADG: 1.8, daysGrazing: 190,
+    stockLossCC: 2.0, adgImprovCC: 7, conceptionImprov: 2,
+    fenceLength: 65, fenceInstall: 8000, fenceMaint: 500, fenceLife: 20,
+    desiredPaddocks: 15, currentPaddocks: 5,
+    musterHours: 120, fenceCheckHours: 80, laborCost: 30, fuelCost: 6000,
+    musterSaved: 60, fenceSaved: 90, fuelSaved: 50,
+    numTags: 200,
+    ccImprovement: 20,
+    hayPerAnimal: 4.5, hayPrice: 230, suppPerAnimal: 50, hayReduction: 35, suppReduction: 20,
+    extendDays: 0, extendADG: 1.8, extendSellPrice: 2.75, holdCostDay: 1.50, extendTags: 0,
+    expandAcres: 0, expandLease: 10,
+    analysisPeriod: 10, discountRate: 8, inflationRate: 3, taxRate: 25,
+  },
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+function get(id)        { return parseFloat(document.getElementById(id)?.value) || 0; }
+function setVal(id, v)  { const el = document.getElementById(id); if (el) el.value = v; }
+function show(id)       { const el = document.getElementById(id); if (el) el.style.display = ''; }
+function hide(id)       { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function fmt(n)         { const s = n < 0 ? '-' : ''; const a = Math.abs(n);
+  if (a >= 1e6) return s + '$' + (a/1e6).toFixed(2) + 'M';
+  if (a >= 1000) return s + '$' + Math.round(a/1000) + 'k';
+  return s + '$' + Math.round(a); }
+
+// ─── WIZARD ──────────────────────────────────────────────────────────
+function selectOpType(type) {
+  STATE.opType = type;
+  document.querySelectorAll('.op-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  const btn = document.getElementById('step1-next');
+  btn.disabled = false; btn.classList.remove('opacity-40','cursor-not-allowed');
+
+  // Update goal label for hold_longer
+  const isStk = type === 'stocker';
+  document.getElementById('hold-goal-label').textContent = isStk
+    ? 'Hold Stockers Longer for More Weight'
+    : 'Retain Calves Longer Before Selling';
+  document.getElementById('hold-goal-desc').textContent = isStk
+    ? 'Retain stockers additional weeks to capture more weight gain before selling. Better pasture condition through rotational management supports sustained ADG into the later grazing period.'
+    : 'Instead of selling at weaning, retain calves on grass for an additional 30–90 days to sell as heavier feeders. Requires reliable pasture and ideally virtual fencing to manage calves separately from the cow herd.';
+}
+
+function toggleGoal(name, card) {
+  if (STATE.goals.has(name)) { STATE.goals.delete(name); card.classList.remove('selected'); document.getElementById('check-' + name).classList.add('hidden'); }
+  else { STATE.goals.add(name); card.classList.add('selected'); document.getElementById('check-' + name).classList.remove('hidden'); }
+  const btn = document.getElementById('step2-next');
+  const ok = STATE.goals.size > 0;
+  btn.disabled = !ok; btn.classList.toggle('opacity-40', !ok); btn.classList.toggle('cursor-not-allowed', !ok);
+}
+
+function setExpand(val) {
+  STATE.canExpand = val;
+  document.getElementById('btn-yes').className = 'yn-btn' + (val ? ' yes-active' : '');
+  document.getElementById('btn-no').className  = 'yn-btn' + (!val ? ' no-active' : '');
+  val ? show('expand-inputs') : hide('expand-inputs');
+  const btn = document.getElementById('step3-next');
+  btn.disabled = false; btn.classList.remove('opacity-40','cursor-not-allowed');
+}
+
+function goStep(n) {
+  [1,2,3].forEach(i => { document.getElementById('step-'+i).style.display = i===n ? '' : 'none'; });
+  [1,2,3].forEach(i => document.getElementById('dot-'+i).className = 'step-dot' + (i<=n ? ' active' : ''));
+}
+
+function completeWizard() {
+  // Copy expansion values from wizard
+  const acres = get('wiz-additionalAcres'), lease = get('wiz-leaseCost');
+
+  hide('wizard');
+  show('calculator');
+
+  // Show/hide op-type fields
+  updateOpTypeUI();
+
+  // Show/hide goal sections
+  updateGoalSections();
+
+  // Show expand section if applicable
+  if (STATE.canExpand) {
+    show('expand-section');
+    setVal('expandAcres', acres);
+    setVal('expandLease', lease);
+  } else {
+    hide('expand-section');
+    setVal('expandAcres', 0);
+  }
+
+  // Hide stocker profiles if cow-calf and vice versa
+  updateProfileChips();
+
+  // Show/hide stocker-only carrying capacity margin field
+  document.getElementById('cc-stocker-margin').style.display = STATE.opType === 'stocker' ? '' : 'none';
+
+  // Sync tags from herd
+  syncTags();
+  calc();
+}
+
+function updateOpTypeUI() {
+  const isCC = STATE.opType === 'cowcalf';
+  document.getElementById('cowcalf-fields').style.display  = isCC ? '' : 'none';
+  document.getElementById('stocker-fields').style.display  = isCC ? 'none' : '';
+  document.getElementById('op-title').textContent = isCC ? 'Your Cow-Calf Operation' : 'Your Stocker Operation';
+  document.getElementById('hold-section-title').textContent = isCC ? '⚖️ Retain Calves Longer' : '⚖️ Extended Grazing';
+  document.getElementById('extend-tags-row').style.display  = isCC ? '' : 'none';
+  document.getElementById('hay-per-label').innerHTML = isCC
+    ? 'Hay fed per cow per year <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Texas avg: 3–4 tons/cow/yr. Montana: 4–5 tons/cow/yr.</span></span> <span class="unit">(tons/cow/yr)</span>'
+    : 'Hay per animal per year <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Seasonal stocker ops often have near-zero hay costs. Enter 0 if purely grass-based.</span></span> <span class="unit">(tons/animal/yr)</span>';
+  document.getElementById('cc-stocker-margin').style.display = STATE.opType === 'stocker' ? '' : 'none';
+}
+
+function updateGoalSections() {
+  ['carrying_capacity','hay_reduction','hold_longer'].forEach(g => {
+    document.getElementById('goal-' + g).style.display = STATE.goals.has(g) ? '' : 'none';
+  });
+}
+
+function updateProfileChips() {
+  // Only show relevant profiles
+  const allProfiles = ['texas_cowcalf','nebraska_stocker','montana_cowcalf'];
+  allProfiles.forEach(p => {
+    const chip = document.getElementById('chip-' + p);
+    if (!chip) return;
+    const pType = PRESETS[p]?.opType;
+    chip.style.display = (pType && pType !== STATE.opType) ? 'none' : '';
+  });
+}
+
+function syncTags() {
+  const n = STATE.opType === 'stocker' ? get('numStockers') : get('numCows');
+  setVal('numTags', n);
+}
+
+// ─── APPLY PROFILE ───────────────────────────────────────────────────
+function applyProfile(name) {
+  document.querySelectorAll('.profile-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('chip-' + name)?.classList.add('active');
+  if (name === 'custom') { calc(); return; }
+  const p = PRESETS[name]; if (!p) return;
+
+  // Update STATE operation type if different
+  if (p.opType && p.opType !== STATE.opType) {
+    STATE.opType = p.opType;
+    updateOpTypeUI();
+  }
+
+  Object.entries(p).forEach(([k, v]) => { if (k !== 'opType') setVal(k, v); });
+
+  // Update expansion
+  if (p.expandAcres > 0 && STATE.canExpand) setVal('expandAcres', p.expandAcres);
+
+  calc();
+}
+
+// ─── CALCULATION ──────────────────────────────────────────────────────
+let cashChart, donutChart;
+
+function calcVFCosts(numTags) {
+  const capex = DROVER.tagCost * numTags;
+  const annualizedTag = capex / DROVER.lifespan;
+  const annualSub = DROVER.annualSub * numTags;
+  const totalAnnual = annualizedTag + annualSub + DROVER.annualSupport;
+  return { capex, annualizedTag, annualSub, totalAnnual };
+}
+
+function calc() {
+  const numTags    = get('numTags');
+  const vf         = calcVFCosts(numTags);
+
+  // Drover breakdown box
+  document.getElementById('drover-breakdown').innerHTML = `
+    <div class="drover-stat font-semibold text-gray-700"><span>Upfront tag cost (${numTags} tags × $99)</span><span>${fmt(vf.capex)}</span></div>
+    <div class="drover-divider"></div>
+    <div class="drover-stat"><span class="text-gray-500">Annual subscription ($60/tag)</span><span>${fmt(vf.annualSub)}/yr</span></div>
+    <div class="drover-stat"><span class="text-gray-500">Tag amortization (÷5 yr lifespan)</span><span>${fmt(vf.annualizedTag)}/yr</span></div>
+    <div class="drover-stat"><span class="text-gray-500">Annual support & training</span><span>$1,000/yr</span></div>
+    <div class="drover-divider"></div>
+    <div class="drover-stat font-semibold text-gray-700"><span>Total annual cost</span><span>${fmt(vf.totalAnnual)}/yr</span></div>
+  `;
+
+  // Shared infra inputs
+  const fenceLength     = get('fenceLength');
+  const fenceInstall    = get('fenceInstall');
+  const fenceMaint      = get('fenceMaint');
+  const fenceLife       = get('fenceLife');
+  const desiredPaddocks = get('desiredPaddocks');
+  const currentPaddocks = get('currentPaddocks');
+  const musterHours     = get('musterHours');
+  const fenceCheckHours = get('fenceCheckHours');
+  const laborCost       = get('laborCost');
+  const fuelCost        = get('fuelCost');
+  const musterSaved     = get('musterSaved') / 100;
+  const fenceSaved      = get('fenceSaved') / 100;
+  const fuelSaved       = get('fuelSaved') / 100;
+  const analysisPeriod  = Math.max(1, get('analysisPeriod'));
+  const discountRate    = get('discountRate') / 100;
+  const inflationRate   = get('inflationRate') / 100;
+  const taxRate         = get('taxRate') / 100;
+
+  // Labor savings (shared)
+  const laborSaving = (musterHours * musterSaved + fenceCheckHours * fenceSaved) * laborCost;
+  const fuelSaving  = fuelCost * fuelSaved;
+
+  // Fence savings
+  const fenceMaintSaving = fenceLength * fenceMaint;
+  // Extra fence needed for physical paddocks
+  const farmAreaForFence = STATE.opType === 'stocker' ? get('farmAreaSt') : get('farmArea');
+  const newPaddocks      = Math.max(0, desiredPaddocks - currentPaddocks);
+  const acresPerPaddock  = newPaddocks > 0 ? farmAreaForFence / desiredPaddocks : 0;
+  // Perimeter of a square paddock: side = sqrt(acres × 43560 sqft/acre) → ÷5280 ft/mile
+  // Divide by 2 to account for shared fence between adjacent paddocks
+  const extraFenceMiles  = newPaddocks * 2 * Math.sqrt(acresPerPaddock * 43560) / 5280;
+  const fenceCapexAvoided = extraFenceMiles * fenceInstall;
+  const annualFenceCapexAvoided = fenceCapexAvoided / Math.max(fenceLife, 1);
+
+  // ── COW-CALF ──────────────────────────────────
+  let prodBenefit = {}, breakdown = {};
+
+  if (STATE.opType === 'cowcalf') {
+    const numCows        = get('numCows');
+    const weaningWeight  = get('weaningWeight');
+    const calfPrice      = get('calfPrice');
+    const conceptionRate = get('conceptionRate') / 100;
+    const calfMortality  = get('calfMortality') / 100;
+    const stockLoss      = get('stockLossCC') / 100;
+    const adgImprov      = get('adgImprovCC') / 100;
+    const concImprov     = get('conceptionImprov') / 100; // pp as decimal
+
+    const calvesProduced = numCows * conceptionRate * (1 - calfMortality);
+    const calvesSold     = calvesProduced * (1 - stockLoss);
+    const calvesLost     = calvesProduced - calvesSold;
+
+    // 1. ADG improvement → heavier calves
+    const extraLbsPerCalf = weaningWeight * adgImprov;
+    const adgBenefit = extraLbsPerCalf * calfPrice * calvesSold;
+
+    // 2. Conception improvement
+    const extraCalves    = numCows * concImprov;
+    const concepBenefit  = extraCalves * weaningWeight * calfPrice;
+
+    // 3. Stock loss reduction (uses stock loss reduction %)
+    const stockLossBenefit = calvesLost * 0.40 * weaningWeight * calfPrice; // 40% recovery default
+    // Note: we don't expose stockLossReduction% separately to keep it simple; using a fixed 40% improvement
+
+    breakdown = {
+      'Weight gain (heavier calves)':  adgBenefit,
+      'Conception improvement':         concepBenefit,
+      'Stock loss reduction':           stockLossBenefit,
+    };
+
+    // Goal: Carrying Capacity
+    if (STATE.goals.has('carrying_capacity')) {
+      const ccPct = get('ccImprovement') / 100;
+      const extraCows = numCows * ccPct;
+      const revenuePerCow = (conceptionRate * (1 - calfMortality) * (1 - stockLoss)) * weaningWeight * calfPrice;
+      breakdown['Carrying capacity uplift'] = extraCows * revenuePerCow;
+    }
+
+    // Goal: Hay reduction
+    if (STATE.goals.has('hay_reduction')) {
+      const hayPerAnimal   = get('hayPerAnimal');
+      const hayPrice       = get('hayPrice');
+      const suppPerAnimal  = get('suppPerAnimal');
+      const hayReduction   = get('hayReduction') / 100;
+      const suppReduction  = get('suppReduction') / 100;
+      const haySaving      = numCows * hayPerAnimal * hayPrice * hayReduction;
+      const suppSaving     = numCows * suppPerAnimal * suppReduction;
+      breakdown['Hay & feed savings'] = haySaving + suppSaving;
+    }
+
+    // Goal: Hold calves longer
+    if (STATE.goals.has('hold_longer')) {
+      const extDays    = get('extendDays');
+      const extADG     = get('extendADG');
+      const extPrice   = get('extendSellPrice');
+      const holdCost   = get('holdCostDay');
+      const extTags    = get('extendTags');
+      const extraLbs   = extDays * extADG;
+      const extTagCost = (extTags * DROVER.tagCost / DROVER.lifespan) + (extTags * DROVER.annualSub);
+      if (extDays > 0) {
+        const revWithExt  = (weaningWeight + extraLbs) * extPrice;
+        const revWithout  = weaningWeight * calfPrice;
+        const holdingCost = extDays * holdCost;
+        const netPerCalf  = revWithExt - revWithout - holdingCost;
+        breakdown['Extended calf grazing'] = (netPerCalf * calvesSold) - extTagCost;
+      } else if (extTagCost > 0) {
+        breakdown['Extended calf grazing'] = -extTagCost; // tag cost only if tags added but no days
+      }
+    }
+
+  // ── STOCKER ───────────────────────────────────
+  } else {
+    const numStockers  = get('numStockers');
+    const buyWeight    = get('buyWeight');
+    const buyPrice     = get('buyPrice');
+    const sellWeight   = get('sellWeight');
+    const sellPr       = get('sellPrice');
+    const stockerADG   = get('stockerADG');
+    const daysOnGrass  = get('daysOnGrass');
+    const turnsPerYear = get('turnsPerYear');
+    const stockLoss    = get('stockLossSt') / 100;
+    const adgImprov    = get('adgImprovSt') / 100;
+
+    const totalAnimals = numStockers * turnsPerYear;
+
+    // 1. ADG improvement → more lbs per head per turn
+    const extraLbs    = stockerADG * adgImprov * daysOnGrass;
+    const adgBenefit  = extraLbs * sellPr * totalAnimals;
+
+    // 2. Stock loss reduction (using 40% improvement on lost animals)
+    const lostAnimals = totalAnimals * stockLoss;
+    const stockLossBenefit = lostAnimals * 0.40 * (buyWeight * buyPrice); // saved purchase cost
+
+    breakdown = {
+      'ADG improvement (more lbs gained)': adgBenefit,
+      'Stock loss reduction':              stockLossBenefit,
+    };
+
+    // Goal: Carrying Capacity
+    if (STATE.goals.has('carrying_capacity')) {
+      const ccPct       = get('ccImprovement') / 100;
+      const ccMargin    = get('ccNetMargin');
+      const extraHeads  = numStockers * ccPct * turnsPerYear;
+      breakdown['Carrying capacity uplift'] = extraHeads * ccMargin;
+    }
+
+    // Goal: Hay reduction
+    if (STATE.goals.has('hay_reduction')) {
+      const hayPerAnimal  = get('hayPerAnimal');
+      const hayPrice      = get('hayPrice');
+      const suppPerAnimal = get('suppPerAnimal');
+      const hayReduction  = get('hayReduction') / 100;
+      const suppReduction = get('suppReduction') / 100;
+      breakdown['Hay & feed savings'] = (numStockers * hayPerAnimal * hayPrice * hayReduction)
+                                      + (numStockers * suppPerAnimal * suppReduction);
+    }
+
+    // Goal: Hold longer
+    if (STATE.goals.has('hold_longer')) {
+      const extDays  = get('extendDays');
+      const extADG   = get('extendADG');
+      const extPrice = get('extendSellPrice');
+      const holdCost = get('holdCostDay');
+      if (extDays > 0) {
+        const extraLbs2 = extDays * extADG;
+        const revExt    = (sellWeight + extraLbs2) * extPrice;
+        const revBase   = sellWeight * sellPr;
+        const holdC     = extDays * holdCost;
+        breakdown['Extended grazing gain'] = (revExt - revBase - holdC) * totalAnimals;
+      }
+    }
+  }
+
+  // Goal: Area Expansion
+  if (STATE.canExpand && get('expandAcres') > 0) {
+    const expandAcres = get('expandAcres');
+    const expandLease = get('expandLease');
+    const leaseCost   = expandAcres * expandLease;
+
+    let expansionRevenue = 0;
+    if (STATE.opType === 'cowcalf') {
+      const farmArea    = get('farmArea');
+      const numCows     = get('numCows');
+      const weaningWeight= get('weaningWeight');
+      const calfPrice   = get('calfPrice');
+      const conceptRate = get('conceptionRate') / 100;
+      const calfMort    = get('calfMortality') / 100;
+      const stockLoss   = get('stockLossCC') / 100;
+      const stockingRate= farmArea / numCows;
+      const extraCows   = expandAcres / stockingRate;
+      const revenuePerCow = (conceptRate * (1 - calfMort) * (1 - stockLoss)) * weaningWeight * calfPrice;
+      expansionRevenue  = extraCows * revenuePerCow;
+    } else {
+      const farmArea   = get('farmAreaSt');
+      const numSt      = get('numStockers');
+      const turns      = get('turnsPerYear');
+      const ccMargin   = STATE.goals.has('carrying_capacity') ? get('ccNetMargin') : 100;
+      const stockRate  = farmArea / numSt;
+      const extraSt    = (expandAcres / stockRate) * turns;
+      expansionRevenue = extraSt * ccMargin;
+    }
+    breakdown['Area expansion (net)'] = expansionRevenue - leaseCost;
+  }
+
+  // Add shared savings
+  breakdown['Labor savings']             = laborSaving;
+  breakdown['Fuel & vehicle savings']    = fuelSaving;
+  breakdown['Fence maintenance saved']   = fenceMaintSaving;
+  breakdown['Fence capex avoided (amort.)'] = annualFenceCapexAvoided;
+
+  // Total annual benefit
+  const totalAnnualBenefit = Object.values(breakdown).reduce((a, b) => a + b, 0);
+  const netAnnualGain      = totalAnnualBenefit - vf.totalAnnual;
+
+  // Simple payback
+  const payback = netAnnualGain > 0 ? vf.capex / netAnnualGain : Infinity;
+
+  // NPV
+  let npv = -vf.capex;
+  const cashflows = [];
+  let cumulative  = -vf.capex;
+  for (let y = 1; y <= analysisPeriod; y++) {
+    const inflFactor = Math.pow(1 + inflationRate, y - 1);
+    const discFactor = Math.pow(1 + discountRate, y);
+    const yearNet    = netAnnualGain * inflFactor * (1 - taxRate);
+    npv             += yearNet / discFactor;
+    cumulative      += netAnnualGain * inflFactor;
+    cashflows.push(cumulative);
+  }
+  const roi = vf.capex > 0 ? ((netAnnualGain * analysisPeriod - vf.capex) / vf.capex) * 100 : 0;
+
+  // ── RENDER ──────────────────────────────────────────────────────
+  document.getElementById('res-payback').textContent    = payback === Infinity ? '∞' : payback < 0.1 ? '<0.1' : payback.toFixed(1);
+  document.getElementById('res-npv').textContent        = fmt(npv);
+  document.getElementById('res-npv-label').textContent  = analysisPeriod + '-Year NPV';
+  document.getElementById('res-npv-sub').textContent    = `discounted @ ${(discountRate*100).toFixed(1)}%`;
+  document.getElementById('res-annual').textContent     = fmt(netAnnualGain);
+  document.getElementById('res-roi').textContent        = roi.toFixed(0) + '%';
+  document.getElementById('res-roi-sub').textContent    = `over ${analysisPeriod} yrs`;
+
+  const netEl = document.getElementById('res-net-gain');
+  netEl.textContent  = fmt(netAnnualGain);
+  netEl.style.color  = netAnnualGain >= 0 ? '#2D6A4F' : '#DC2626';
+  document.getElementById('res-annual').style.color = netAnnualGain >= 0 ? '#2D6A4F' : '#C2410C';
+
+  // Breakdown list (sorted descending, filter out near-zero)
+  const sortedBreakdown = Object.entries(breakdown)
+    .filter(([,v]) => Math.abs(v) > 1)
+    .sort(([,a],[,b]) => Math.abs(b) - Math.abs(a));
+
+  document.getElementById('res-breakdown').innerHTML = sortedBreakdown.map(([label, val]) => `
+    <div class="result-row">
+      <span class="text-gray-500">${label}</span>
+      <span class="font-medium" style="color:${val >= 0 ? '#2D6A4F' : '#DC2626'}">${fmt(val)}</span>
+    </div>`).join('');
+
+  document.getElementById('res-total-benefit').textContent = fmt(totalAnnualBenefit);
+  document.getElementById('res-drover-cost').textContent   = '−' + fmt(vf.totalAnnual);
+
+  // Investment summary
+  document.getElementById('res-invest').innerHTML = `
+    <div class="result-row font-medium"><span>Ear tags (${numTags} × $99)</span><span>${fmt(vf.capex)}</span></div>
+    <div class="result-row text-gray-500"><span>No base station or setup fees</span><span>$0</span></div>
+    <div class="result-row font-semibold border-t border-gray-100 pt-2 mt-1"><span>Total Upfront</span><span>${fmt(vf.capex)}</span></div>
+    <div class="result-row mt-2 text-gray-500"><span>Annual subscription ($60/tag)</span><span>${fmt(vf.annualSub)}/yr</span></div>
+    <div class="result-row text-gray-500"><span>Support & training (flat)</span><span>$1,000/yr</span></div>
+    <div class="result-row text-gray-500"><span>Tag amortization</span><span>${fmt(vf.annualizedTag)}/yr</span></div>
+    <div class="result-row font-semibold border-t border-gray-100 pt-2 mt-1"><span>Total Annual OpEx</span><span>${fmt(vf.totalAnnual)}/yr</span></div>
+  `;
+
+  // Charts
+  renderCashflow(cashflows, vf.capex, analysisPeriod);
+  renderDonut(sortedBreakdown.filter(([,v]) => v > 0));
+}
+
+function renderCashflow(cashflows, capex, years) {
+  const labels = cashflows.map((_, i) => 'Yr ' + (i+1));
+  const data   = cashflows.map(v => Math.round(v));
+  const colors = data.map(v => v >= 0 ? 'rgba(82,183,136,0.75)' : 'rgba(239,68,68,0.65)');
+  if (cashChart) cashChart.destroy();
+  cashChart = new Chart(document.getElementById('cashflowChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, barThickness: years <= 10 ? 22 : 14 }] },
+    options: {
+      responsive: true, animation: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ' ' + (ctx.raw >= 0 ? '' : '-') + '$' + Math.abs(Math.round(ctx.raw/1000)) + 'k' }
+      }},
+      scales: {
+        y: { ticks: { callback: v => (v < 0 ? '-$' : '$') + Math.abs(v/1000).toFixed(0) + 'k', font: { size: 10 } }, grid: { color: '#F0F4F1' } },
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderDonut(items) {
+  if (!items.length) return;
+  if (donutChart) donutChart.destroy();
+  const palette = ['#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2','#B7E4C7','#F4A261','#E76F51','#264653'];
+  donutChart = new Chart(document.getElementById('benefitChart'), {
+    type: 'doughnut',
+    data: {
+      labels: items.map(([l]) => l),
+      datasets: [{ data: items.map(([,v]) => Math.round(v)), backgroundColor: palette.slice(0, items.length), borderWidth: 2, borderColor: 'white' }]
+    },
+    options: {
+      responsive: true, animation: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': $' + (ctx.parsed/1000).toFixed(1) + 'k' } }
+      }
+    }
+  });
+}
+
+function toggleSec(name) {
+  const el  = document.getElementById(name + '-content');
+  const hdr = el.previousElementSibling;
+  const chev = hdr.querySelector('.chevron');
+  if (el.style.maxHeight === '0px' || el.style.maxHeight === '') {
+    el.style.maxHeight = '1200px';
+    chev?.classList.remove('collapsed');
+  } else {
+    el.style.maxHeight = '0px';
+    chev?.classList.add('collapsed');
+  }
+}
+</script>
+</body>
+</html>
