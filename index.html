@@ -7,42 +7,42 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    :root { --green: #2D6A4F; --green-light: #52B788; --green-dark: #1B4332; --amber: #F4A261; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #F4F7F5; }
-    .brand-grad { background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 55%, #40916C 100%); }
+    :root { --blue: #1A4B8C; --blue-light: #4A90D9; --blue-dark: #0A2240; --amber: #F4A261; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #F2F6FC; }
+    .brand-grad { background: linear-gradient(135deg, #071829 0%, #0E2D52 50%, #1A4B8C 100%); }
 
     /* Wizard */
-    .op-card { border: 2.5px solid #E2EDE8; border-radius: 14px; cursor: pointer; transition: all .18s; background: white; }
-    .op-card:hover { border-color: #52B788; box-shadow: 0 4px 16px rgba(82,183,136,.2); }
-    .op-card.selected { border-color: #2D6A4F; background: #F0FAF5; box-shadow: 0 4px 20px rgba(45,106,79,.2); }
-    .goal-card { border: 2.5px solid #E2EDE8; border-radius: 12px; cursor: pointer; transition: all .18s; background: white; padding: 16px; }
-    .goal-card:hover { border-color: #52B788; }
-    .goal-card.selected { border-color: #2D6A4F; background: #F0FAF5; }
+    .op-card { border: 2.5px solid #D6E4F5; border-radius: 14px; cursor: pointer; transition: all .18s; background: white; }
+    .op-card:hover { border-color: #4A90D9; box-shadow: 0 4px 16px rgba(74,144,217,.2); }
+    .op-card.selected { border-color: #1A4B8C; background: #EBF4FF; box-shadow: 0 4px 20px rgba(26,75,140,.2); }
+    .goal-card { border: 2.5px solid #D6E4F5; border-radius: 12px; cursor: pointer; transition: all .18s; background: white; padding: 16px; }
+    .goal-card:hover { border-color: #4A90D9; }
+    .goal-card.selected { border-color: #1A4B8C; background: #EBF4FF; }
     .goal-card .check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #CBD5E1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .goal-card.selected .check { background: #2D6A4F; border-color: #2D6A4F; }
+    .goal-card.selected .check { background: #1A4B8C; border-color: #1A4B8C; }
     .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1; transition: background .2s; }
-    .step-dot.active { background: #2D6A4F; }
+    .step-dot.active { background: #1A4B8C; }
 
     /* Profile chips */
-    .profile-chip { padding: 8px 18px; border-radius: 999px; border: 2px solid #E2EDE8; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; white-space: nowrap; }
-    .profile-chip:hover { border-color: #52B788; }
-    .profile-chip.active { border-color: #2D6A4F; background: #2D6A4F; color: white; }
+    .profile-chip { padding: 8px 18px; border-radius: 999px; border: 2px solid #D6E4F5; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; white-space: nowrap; }
+    .profile-chip:hover { border-color: #4A90D9; }
+    .profile-chip.active { border-color: #1A4B8C; background: #1A4B8C; color: white; }
 
     /* Calculator */
-    .section-card { background: white; border-radius: 12px; border: 1px solid #E2EDE8; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-    .param-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #F0F4F1; gap: 12px; }
+    .section-card { background: white; border-radius: 12px; border: 1px solid #D6E4F5; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    .param-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #EEF4FB; gap: 12px; }
     .param-row:last-child { border-bottom: none; }
     .param-label { font-size: 13px; color: #4B5563; flex: 1; }
     .param-label .unit { font-size: 11px; color: #9CA3AF; }
-    input[type=number] { border: 1.5px solid #D1E8DC; border-radius: 7px; padding: 5px 9px; width: 100px; font-size: 13px; text-align: right; color: #1B4332; background: white; }
-    input[type=number]:focus { outline: none; border-color: #2D6A4F; box-shadow: 0 0 0 2px rgba(45,106,79,.12); }
-    select { border: 1.5px solid #D1E8DC; border-radius: 7px; padding: 5px 9px; font-size: 13px; color: #1B4332; background: white; }
-    select:focus { outline: none; border-color: #2D6A4F; }
+    input[type=number] { border: 1.5px solid #C5DCEF; border-radius: 7px; padding: 5px 9px; width: 100px; font-size: 13px; text-align: right; color: #0A2240; background: white; }
+    input[type=number]:focus { outline: none; border-color: #1A4B8C; box-shadow: 0 0 0 2px rgba(26,75,140,.12); }
+    select { border: 1.5px solid #C5DCEF; border-radius: 7px; padding: 5px 9px; font-size: 13px; color: #0A2240; background: white; }
+    select:focus { outline: none; border-color: #1A4B8C; }
 
     /* Tooltips */
     .tip { position: relative; display: inline-flex; align-items: center; cursor: help; }
-    .tip-icon { width: 15px; height: 15px; border-radius: 50%; background: #E2EDE8; color: #6B7280; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; flex-shrink: 0; }
-    .tip .tip-text { visibility: hidden; background: #1B4332; color: white; padding: 7px 11px; border-radius: 8px; position: absolute; z-index: 20; width: 210px; font-size: 11px; line-height: 1.5; bottom: 130%; left: 0; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    .tip-icon { width: 15px; height: 15px; border-radius: 50%; background: #D6E4F5; color: #6B7280; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; flex-shrink: 0; }
+    .tip .tip-text { visibility: hidden; background: #0A2240; color: white; padding: 7px 11px; border-radius: 8px; position: absolute; z-index: 20; width: 210px; font-size: 11px; line-height: 1.5; bottom: 130%; left: 0; opacity: 0; transition: opacity .2s; pointer-events: none; }
     .tip:hover .tip-text { visibility: visible; opacity: 1; }
 
     /* Results */
@@ -54,17 +54,17 @@
     .collapsible { overflow: hidden; transition: max-height .3s ease; }
 
     /* Drover callout box */
-    .drover-box { background: #F0FAF5; border: 1.5px solid #B7E4C7; border-radius: 10px; padding: 14px 16px; }
+    .drover-box { background: #EBF4FF; border: 1.5px solid #B3D4F0; border-radius: 10px; padding: 14px 16px; }
     .drover-stat { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
-    .drover-divider { border-top: 1px dashed #B7E4C7; margin: 8px 0; }
+    .drover-divider { border-top: 1px dashed #B3D4F0; margin: 8px 0; }
 
     /* Expand-yes toggle */
-    .yn-btn { padding: 7px 18px; border-radius: 8px; border: 2px solid #E2EDE8; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; }
-    .yn-btn.yes-active { border-color: #2D6A4F; background: #2D6A4F; color: white; }
+    .yn-btn { padding: 7px 18px; border-radius: 8px; border: 2px solid #D6E4F5; cursor: pointer; font-size: 13px; font-weight: 500; background: white; transition: all .15s; }
+    .yn-btn.yes-active { border-color: #1A4B8C; background: #1A4B8C; color: white; }
     .yn-btn.no-active  { border-color: #DC2626; background: #FEF2F2; color: #DC2626; }
 
     /* Section number badge */
-    .sec-num { min-width: 28px; height: 28px; border-radius: 8px; background: #2D6A4F; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .sec-num { min-width: 28px; height: 28px; border-radius: 8px; background: #1A4B8C; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
     .sec-num.goal { background: #F4A261; }
   </style>
 </head>
@@ -72,15 +72,22 @@
 
 <!-- ───────────────── HEADER ───────────────── -->
 <header class="brand-grad text-white py-7 px-6">
-  <div class="max-w-6xl mx-auto flex items-start justify-between">
-    <div>
-      <div class="flex items-center gap-2 mb-1">
-        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect width="26" height="26" rx="6" fill="rgba(255,255,255,.18)"/><path d="M5 19l6-10 4 6 3-3 3 7H5Z" fill="white" opacity=".9"/><circle cx="19" cy="8" r="2.5" fill="#F4A261"/></svg>
-        <span class="text-xs font-semibold tracking-widest opacity-70 uppercase">Drover</span>
-      </div>
-      <h1 class="text-2xl font-bold leading-tight">Virtual Fencing ROI Calculator</h1>
-      <p class="text-sm opacity-75 mt-1">Tailored to your operation — see your real return on investment</p>
+  <div class="max-w-6xl mx-auto">
+    <div class="mb-4">
+      <svg fill="white" viewBox="0 0 492.99 256.23" style="height:44px;width:auto;display:block;">
+        <g>
+          <path d="M72.94,186.44v-59.44h22.23c17.11,0,25.67,8.55,25.67,25.67v8.1c0,17.12-8.56,25.67-25.67,25.67h-22.23ZM87.93,172.92h8.1c6.55,0,9.82-3.3,9.82-9.91v-12.58c0-6.6-3.27-9.91-9.82-9.91h-8.1v32.39Z"/>
+          <path d="M132.55,186.44v-59.44h29.29c10.11,0,15.16,5.05,15.16,15.16v10c0,7-2.41,11.6-7.24,13.78l8.96,17.49-1.72,3.01h-12.92l-9.82-19.21h-6.72v19.21h-14.99ZM147.54,153.71h13.53c.63,0,.95-.32.95-.95v-11.29c0-.63-.32-.95-.95-.95h-13.53v13.18Z"/>
+          <path d="M187.86,171.29v-29.12c0-10.11,5.05-15.16,15.16-15.16h19.3c10.11,0,15.16,5.05,15.16,15.16v29.12c0,10.1-5.05,15.16-15.16,15.16h-19.3c-10.11,0-15.16-5.05-15.16-15.16ZM202.85,171.97c0,.63.32.95.95.95h17.74c.63,0,.95-.32.95-.95v-30.5c0-.63-.32-.95-.95-.95h-17.74c-.63,0-.95.32-.95.95v30.5Z"/>
+          <path d="M244.8,129.76l1.81-2.76h13.27l11.97,45.91h1.03l11.97-45.91h13.26l1.81,2.76-15.94,56.68h-23.26l-15.94-56.68Z"/>
+          <path d="M308.12,186.44v-59.44h41.61v13.52h-26.62v8.87h24.04v13.53h-24.04v9.99h26.62v13.52h-41.61Z"/>
+          <path d="M360.76,186.44v-59.44h29.29c10.11,0,15.16,5.05,15.16,15.16v10c0,7-2.41,11.6-7.24,13.78l8.96,17.49-1.72,3.01h-12.92l-9.82-19.21h-6.72v19.21h-14.99ZM375.75,153.71h13.53c.63,0,.95-.32.95-.95v-11.29c0-.63-.32-.95-.95-.95h-13.53v13.18Z"/>
+        </g>
+        <path d="M382.29,58.95c-4.4,0-8.8,1.1-13.1,3.42l-39.45,24.63c-1.94,1.04-4.12,1.59-6.29,1.59h-110.06l-58.54.06c-2.18,0-4.35-.55-6.29-1.59l-39.45-24.63c-4.3-2.32-8.7-3.42-13.1-3.42h-23.24v8.36l23.68,2.62c2.03.7,4.23,2.22,6.17,3.25l39.13,25.59c4.3,2.32,8.7,3.42,13.1,3.42l58.54-.06h110.06c4.4,0,8.8-1.1,13.1-3.42l39.13-25.59c1.94-1.04,4.14-2.56,6.17-3.25l23.68-2.62v-8.36h-23.24Z"/>
+      </svg>
     </div>
+    <h1 class="text-2xl font-bold leading-tight">ROI Calculator</h1>
+    <p class="text-sm opacity-70 mt-1">Tailored to your operation — see your real return on investment</p>
   </div>
 </header>
 
@@ -95,17 +102,15 @@
   <!-- Step 1: Operation Type -->
   <div id="step-1">
     <h2 class="text-xl font-bold text-gray-800 text-center mb-1">What type of operation are you running?</h2>
-    <p class="text-sm text-gray-500 text-center mb-6">This sets the right parameters for your calculator</p>
+    <p class="text-sm text-gray-500 text-center mb-6">This tailors the numbers to your setup</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
       <div class="op-card p-6 text-center" onclick="selectOpType('stocker')">
         <div class="text-4xl mb-3">🌾</div>
-        <div class="font-bold text-gray-800 text-base mb-1">Stocker Operation</div>
-        <div class="text-xs text-gray-500 leading-relaxed">Buy lightweight calves or yearlings, graze on grass to gain weight, then sell heavier. Revenue comes from weight gain efficiency.</div>
+        <div class="font-bold text-gray-800 text-base">Stocker Operation</div>
       </div>
       <div class="op-card p-6 text-center" onclick="selectOpType('cowcalf')">
         <div class="text-4xl mb-3">🐄</div>
-        <div class="font-bold text-gray-800 text-base mb-1">Cow-Calf Operation</div>
-        <div class="text-xs text-gray-500 leading-relaxed">Maintain a permanent cow herd that produces calves each year. Revenue from calf sales. Winter hay feeding is a major cost driver.</div>
+        <div class="font-bold text-gray-800 text-base">Cow-Calf Operation</div>
       </div>
     </div>
     <div class="flex justify-end">
@@ -121,30 +126,21 @@
     <p class="text-sm text-gray-500 text-center mb-6">Select all that apply — the calculator will model each benefit</p>
     <div class="flex flex-col gap-3 mb-6">
       <div class="goal-card" onclick="toggleGoal('carrying_capacity', this)">
-        <div class="flex items-start gap-3">
-          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-carrying_capacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-          <div>
-            <div class="font-semibold text-gray-800 text-sm mb-0.5">📈 Increase Carrying Capacity</div>
-            <div class="text-xs text-gray-500 leading-relaxed">Better rotational grazing through precise paddock management lets you stock more animals on the same land — without overgrazing. Typical improvement: 20–35%.</div>
-          </div>
+        <div class="flex items-center gap-3">
+          <div class="check"><svg class="w-3 h-3 text-white hidden" id="check-carrying_capacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div class="font-semibold text-gray-800 text-sm">📈 Increase Carrying Capacity</div>
         </div>
       </div>
       <div class="goal-card" onclick="toggleGoal('hay_reduction', this)">
-        <div class="flex items-start gap-3">
-          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-hay_reduction" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-          <div>
-            <div class="font-semibold text-gray-800 text-sm mb-0.5">🌿 Reduce Hay &amp; Feed Costs</div>
-            <div class="text-xs text-gray-500 leading-relaxed">Optimized grazing patterns extend your grass season, reduce overgrazing and waste, and lower dependency on expensive hay and supplements — especially valuable in hard winters.</div>
-          </div>
+        <div class="flex items-center gap-3">
+          <div class="check"><svg class="w-3 h-3 text-white hidden" id="check-hay_reduction" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div class="font-semibold text-gray-800 text-sm">🌿 Reduce Hay &amp; Feed Costs</div>
         </div>
       </div>
       <div class="goal-card" onclick="toggleGoal('hold_longer', this)">
-        <div class="flex items-start gap-3">
-          <div class="check mt-0.5"><svg class="w-3 h-3 text-white hidden" id="check-hold_longer" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-          <div>
-            <div class="font-semibold text-gray-800 text-sm mb-0.5">⚖️ <span id="hold-goal-label">Hold Animals Longer for More Weight</span></div>
-            <div class="text-xs text-gray-500 leading-relaxed" id="hold-goal-desc">Retain stockers additional weeks to capture more weight gain before selling. Better pasture condition through rotational management supports sustained ADG into the later grazing period.</div>
-          </div>
+        <div class="flex items-center gap-3">
+          <div class="check"><svg class="w-3 h-3 text-white hidden" id="check-hold_longer" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+          <div class="font-semibold text-gray-800 text-sm">⚖️ <span id="hold-goal-label">Hold Animals Longer for More Weight</span></div>
         </div>
       </div>
     </div>
@@ -240,6 +236,13 @@
               </div>
               <div>
                 <div class="param-row">
+                  <label class="param-label">Pasture currently underutilized
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of your land that cattle can't graze efficiently — corners you can't reach, riparian areas, rough terrain, or land too far from water. Virtual fencing unlocks this area.</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="unusedPastureCC" value="15" min="0" max="60" step="1" onchange="calc()" />
+                </div>
+                <div class="param-row">
                   <label class="param-label">Calf mortality
                     <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of calves lost from birth to weaning (industry avg 3–5%).</span></span>
                     <span class="unit">(%)</span>
@@ -308,6 +311,13 @@
                 </div>
               </div>
               <div>
+                <div class="param-row">
+                  <label class="param-label">Pasture currently underutilized
+                    <span class="tip"><span class="tip-icon">?</span><span class="tip-text">% of your land that animals can't access efficiently — far corners, riparian buffers, rough terrain, areas without water access. Virtual fencing unlocks this acreage.</span></span>
+                    <span class="unit">(%)</span>
+                  </label>
+                  <input type="number" id="unusedPastureSt" value="15" min="0" max="60" step="1" onchange="calc()" />
+                </div>
                 <div class="param-row">
                   <label class="param-label">Sell price
                     <span class="tip"><span class="tip-icon">?</span><span class="tip-text">Price per pound at sale. Heavier feeders typically receive slightly lower $/lb. Current NE market ~$2.70/lb for 775 lb feeders.</span></span>
@@ -635,14 +645,14 @@
         <div class="section-card p-5">
           <h2 class="font-semibold text-gray-800 mb-4">Results Summary</h2>
           <div class="grid grid-cols-2 gap-3 mb-4">
-            <div class="metric-box" style="background:#E8F5EE">
+            <div class="metric-box" style="background:#EBF4FF">
               <div class="text-xs text-gray-500 mb-1">Simple Payback</div>
-              <div class="text-2xl font-bold" style="color:#1B4332" id="res-payback">—</div>
+              <div class="text-2xl font-bold" style="color:#0A2240" id="res-payback">—</div>
               <div class="text-xs text-gray-400">years</div>
             </div>
-            <div class="metric-box" style="background:#E8F5EE">
+            <div class="metric-box" style="background:#EBF4FF">
               <div class="text-xs text-gray-500 mb-1" id="res-npv-label">10-Year NPV</div>
-              <div class="text-2xl font-bold" style="color:#1B4332" id="res-npv">—</div>
+              <div class="text-2xl font-bold" style="color:#0A2240" id="res-npv">—</div>
               <div class="text-xs text-gray-400" id="res-npv-sub">discounted</div>
             </div>
             <div class="metric-box" style="background:#FFF8F0">
@@ -663,7 +673,7 @@
           <div class="border-t border-gray-100 pt-3 space-y-1">
             <div class="result-row font-semibold">
               <span>Total Annual Benefit</span>
-              <span style="color:#2D6A4F" id="res-total-benefit">—</span>
+              <span style="color:#1A4B8C" id="res-total-benefit">—</span>
             </div>
             <div class="result-row">
               <span class="text-gray-500">Drover Annual Cost</span>
@@ -718,7 +728,7 @@ const PRESETS = {
     // Operation
     farmArea: 1000, numCows: 50, weaningWeight: 550, calfPrice: 2.90,
     conceptionRate: 80, calfMortality: 4, calfADG: 1.8, daysGrazing: 180,
-    stockLossCC: 2.5, adgImprovCC: 8, conceptionImprov: 3,
+    unusedPastureCC: 15, stockLossCC: 2.5, adgImprovCC: 8, conceptionImprov: 3,
     // Infra
     fenceLength: 15, fenceInstall: 8000, fenceMaint: 500, fenceLife: 20,
     desiredPaddocks: 10, currentPaddocks: 3,
@@ -742,7 +752,7 @@ const PRESETS = {
     farmArea: 700, farmAreaSt: 700, numStockers: 280,
     buyWeight: 550, buyPrice: 3.30, sellWeight: 775, sellPrice: 2.70,
     stockerADG: 1.7, daysOnGrass: 130, turnsPerYear: 1,
-    stockLossSt: 1.5, adgImprovSt: 15,
+    unusedPastureSt: 20, stockLossSt: 1.5, adgImprovSt: 15,
     fenceLength: 10, fenceInstall: 7000, fenceMaint: 400, fenceLife: 20,
     desiredPaddocks: 14, currentPaddocks: 4,
     musterHours: 30, fenceCheckHours: 20, laborCost: 28, fuelCost: 2000,
@@ -758,7 +768,7 @@ const PRESETS = {
     opType: 'cowcalf',
     farmArea: 5000, numCows: 200, weaningWeight: 550, calfPrice: 2.90,
     conceptionRate: 85, calfMortality: 3, calfADG: 1.8, daysGrazing: 190,
-    stockLossCC: 2.0, adgImprovCC: 7, conceptionImprov: 2,
+    unusedPastureCC: 20, stockLossCC: 2.0, adgImprovCC: 7, conceptionImprov: 2,
     fenceLength: 65, fenceInstall: 8000, fenceMaint: 500, fenceLife: 20,
     desiredPaddocks: 15, currentPaddocks: 5,
     musterHours: 120, fenceCheckHours: 80, laborCost: 30, fuelCost: 6000,
@@ -985,6 +995,7 @@ function calc() {
     const stockLoss      = get('stockLossCC') / 100;
     const adgImprov      = get('adgImprovCC') / 100;
     const concImprov     = get('conceptionImprov') / 100; // pp as decimal
+    const unusedPasture  = get('unusedPastureCC') / 100;
 
     const calvesProduced = numCows * conceptionRate * (1 - calfMortality);
     const calvesSold     = calvesProduced * (1 - stockLoss);
@@ -998,14 +1009,18 @@ function calc() {
     const extraCalves    = numCows * concImprov;
     const concepBenefit  = extraCalves * weaningWeight * calfPrice;
 
-    // 3. Stock loss reduction (uses stock loss reduction %)
-    const stockLossBenefit = calvesLost * 0.40 * weaningWeight * calfPrice; // 40% recovery default
-    // Note: we don't expose stockLossReduction% separately to keep it simple; using a fixed 40% improvement
+    // 3. Stock loss reduction (40% improvement on currently lost animals)
+    const stockLossBenefit = calvesLost * 0.40 * weaningWeight * calfPrice;
+
+    // 4. Underutilized pasture — unlocked acreage supports proportional extra cows
+    const revenuePerCow = (conceptionRate * (1 - calfMortality) * (1 - stockLoss)) * weaningWeight * calfPrice;
+    const unusedPastureBenefit = unusedPasture > 0 ? (numCows * unusedPasture) * revenuePerCow : 0;
 
     breakdown = {
-      'Weight gain (heavier calves)':  adgBenefit,
-      'Conception improvement':         concepBenefit,
-      'Stock loss reduction':           stockLossBenefit,
+      'Weight gain (heavier calves)':   adgBenefit,
+      'Conception improvement':          concepBenefit,
+      'Stock loss reduction':            stockLossBenefit,
+      'Unlocked pasture acreage':        unusedPastureBenefit,
     };
 
     // Goal: Carrying Capacity
@@ -1060,6 +1075,7 @@ function calc() {
     const turnsPerYear = get('turnsPerYear');
     const stockLoss    = get('stockLossSt') / 100;
     const adgImprov    = get('adgImprovSt') / 100;
+    const unusedPasture = get('unusedPastureSt') / 100;
 
     const totalAnimals = numStockers * turnsPerYear;
 
@@ -1067,13 +1083,19 @@ function calc() {
     const extraLbs    = stockerADG * adgImprov * daysOnGrass;
     const adgBenefit  = extraLbs * sellPr * totalAnimals;
 
-    // 2. Stock loss reduction (using 40% improvement on lost animals)
+    // 2. Stock loss reduction (40% improvement on lost animals)
     const lostAnimals = totalAnimals * stockLoss;
-    const stockLossBenefit = lostAnimals * 0.40 * (buyWeight * buyPrice); // saved purchase cost
+    const stockLossBenefit = lostAnimals * 0.40 * (buyWeight * buyPrice);
+
+    // 3. Underutilized pasture — unlocked acreage supports proportional extra stockers
+    const netMarginPerHead = sellWeight * sellPr - buyWeight * buyPrice;
+    const unusedPastureBenefit = unusedPasture > 0 ? (numStockers * unusedPasture * turnsPerYear) * netMarginPerHead * 0.5 : 0;
+    // ×0.5 conservative: not all newly accessible land will be as productive
 
     breakdown = {
       'ADG improvement (more lbs gained)': adgBenefit,
-      'Stock loss reduction':              stockLossBenefit,
+      'Stock loss reduction':               stockLossBenefit,
+      'Unlocked pasture acreage':           unusedPastureBenefit,
     };
 
     // Goal: Carrying Capacity
@@ -1216,7 +1238,7 @@ function calc() {
 function renderCashflow(cashflows, capex, years) {
   const labels = cashflows.map((_, i) => 'Yr ' + (i+1));
   const data   = cashflows.map(v => Math.round(v));
-  const colors = data.map(v => v >= 0 ? 'rgba(82,183,136,0.75)' : 'rgba(239,68,68,0.65)');
+  const colors = data.map(v => v >= 0 ? 'rgba(74,144,217,0.75)' : 'rgba(239,68,68,0.65)');
   if (cashChart) cashChart.destroy();
   cashChart = new Chart(document.getElementById('cashflowChart'), {
     type: 'bar',
@@ -1237,7 +1259,7 @@ function renderCashflow(cashflows, capex, years) {
 function renderDonut(items) {
   if (!items.length) return;
   if (donutChart) donutChart.destroy();
-  const palette = ['#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2','#B7E4C7','#F4A261','#E76F51','#264653'];
+  const palette = ['#1A4B8C','#2E6CC7','#4A90D9','#6CA8D9','#8DC0E8','#B3D4F0','#F4A261','#E76F51','#264653'];
   donutChart = new Chart(document.getElementById('benefitChart'), {
     type: 'doughnut',
     data: {
