@@ -6,7 +6,6 @@
 <title>Drover Virtual Fencing ROI Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   body { background: #F2F6FC; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   .header-gradient { background: linear-gradient(135deg, #071829 0%, #0E2D52 50%, #1A4B8C 100%); }
@@ -75,10 +74,23 @@
   .pdf-export-btn:hover { background:#0A2240; }
   .pdf-export-btn:disabled { background:#93B4D4; cursor:not-allowed; }
   @media print {
-    #wizard, #pdfExportBar, #sources, #priceBar { display:none !important; }
+    /* hide everything except the calculator */
+    #wizard, #pdfExportBar, #priceBar { display:none !important; }
+    /* force calculator visible (it may be shown already) */
+    #calcSection { display:block !important; }
+    /* un-stick the right column so it flows naturally */
     .sticky { position:static !important; }
-    .card { box-shadow:none !important; border:1px solid #E5E7EB !important; }
-    body { background:white !important; }
+    /* right column goes full-width */
+    .lg\:w-96 { width:100% !important; }
+    /* two-column layout becomes single column */
+    .lg\:flex-row { flex-direction:column !important; }
+    /* clean card borders, no shadows */
+    .card { box-shadow:none !important; border:1px solid #D1D5DB !important; break-inside:avoid; }
+    /* show sources accordion regardless of toggle state */
+    #sourcesBody { display:block !important; }
+    body { background:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    /* hide canvas (replaced by img before printing) */
+    canvas.print-hide { display:none !important; }
   }
 </style>
 </head>
@@ -1158,50 +1170,45 @@ function updateProfileChips(active) {
   });
 }
 
-async function exportPDF() {
+function exportPDF() {
   const btn = document.getElementById('pdfExportBar');
   btn.disabled = true;
-  btn.innerHTML = '<svg class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12"/></svg> Generating…';
+  btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2.5" stroke-dasharray="32" stroke-dashoffset="12"/></svg> Preparing…';
 
-  // Make sure sources accordion is open so it renders in PDF
-  const sourcesBody = document.getElementById('sourcesBody');
-  const wasHidden = sourcesBody.classList.contains('hidden');
-  sourcesBody.classList.remove('hidden');
-
-  // Brief pause to let charts fully render
-  await new Promise(r => setTimeout(r, 300));
-
-  const element = document.getElementById('calcSection');
-  const opLabel = (STATE.opType === 'cowcalf' ? 'Cow-Calf' : 'Stocker') + ' Operation';
-  const region = REGIONS[STATE.region] ? REGIONS[STATE.region].name : '';
-  const filename = `Drover-ROI-${opLabel.replace(/\s/g,'-')}-${region.replace(/[^A-Za-z]/g,'-')}.pdf`;
-
-  const opt = {
-    margin: [10, 10, 10, 10],
-    filename,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#F2F6FC',
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-  };
-
-  try {
-    await html2pdf().set(opt).from(element).save();
-  } catch(e) {
-    console.error('PDF export failed:', e);
-    alert('PDF export failed. Try using your browser\'s Print → Save as PDF instead.');
+  // 1. Convert each Chart.js canvas to a static <img> so it survives the print pipeline
+  //    (browsers don't always rasterise canvas reliably inside @media print)
+  const chartIds = ['cashflowChart', 'donutChart', 'sensitivityChart'];
+  const swapped = [];
+  for (const id of chartIds) {
+    const canvas = document.getElementById(id);
+    if (!canvas) continue;
+    try {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.style.width  = canvas.offsetWidth  + 'px';
+      img.style.height = canvas.offsetHeight + 'px';
+      img.style.maxWidth = '100%';
+      canvas.classList.add('print-hide');
+      canvas.parentNode.insertBefore(img, canvas.nextSibling);
+      swapped.push({ canvas, img });
+    } catch(e) { /* canvas tainted — skip */ }
   }
 
-  // Restore sources state
-  if (wasHidden) sourcesBody.classList.add('hidden');
+  // 2. Restore everything after the print dialog closes (or is cancelled)
+  function restore() {
+    for (const { canvas, img } of swapped) {
+      canvas.classList.remove('print-hide');
+      img.remove();
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Export PDF';
+    window.removeEventListener('focus', restore);
+  }
+  // 'focus' fires when the print dialog closes on most browsers
+  window.addEventListener('focus', restore, { once: true });
 
-  btn.disabled = false;
-  btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Export PDF';
+  // 3. Small delay so the DOM updates before the print snapshot is taken
+  setTimeout(() => { window.print(); }, 150);
 }
 
 function toggleSources() {
