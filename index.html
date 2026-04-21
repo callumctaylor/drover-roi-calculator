@@ -6,6 +6,7 @@
 <title>Drover Virtual Fencing ROI Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   body { background: #F2F6FC; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   .header-gradient { background: linear-gradient(135deg, #071829 0%, #0E2D52 50%, #1A4B8C 100%); }
@@ -70,6 +71,15 @@
   #sensitivityChart { max-height: 260px; }
   #cashflowChart { max-height: 190px; }
   #donutChart { max-height: 190px; }
+  .pdf-export-btn { display:inline-flex; align-items:center; gap:6px; background:#1A4B8C; color:white; border:none; border-radius:8px; padding:8px 18px; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s; }
+  .pdf-export-btn:hover { background:#0A2240; }
+  .pdf-export-btn:disabled { background:#93B4D4; cursor:not-allowed; }
+  @media print {
+    #wizard, #pdfExportBar, #sources, #priceBar { display:none !important; }
+    .sticky { position:static !important; }
+    .card { box-shadow:none !important; border:1px solid #E5E7EB !important; }
+    body { background:white !important; }
+  }
 </style>
 </head>
 <body>
@@ -253,14 +263,20 @@
 <!-- CALCULATOR -->
 <div id="calcSection" class="hidden max-w-6xl mx-auto px-4 py-6">
 
-  <!-- Profile Chips -->
+  <!-- Profile Chips + Export -->
   <div class="flex items-center gap-3 mb-4 flex-wrap">
     <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Load:</span>
     <button class="profile-chip" id="chip-texas_cowcalf" onclick="applyProfile('texas_cowcalf')">&#129312; Texas Cow-Calf</button>
     <button class="profile-chip" id="chip-nebraska_stocker" onclick="applyProfile('nebraska_stocker')">&#127805; Nebraska Stocker</button>
     <button class="profile-chip" id="chip-montana_cowcalf" onclick="applyProfile('montana_cowcalf')">&#127956; Montana Cow-Calf</button>
     <button class="profile-chip" id="chip-custom" onclick="setCustomProfile()">&#9999;&#65039; Custom</button>
-    <div class="ml-auto region-badge" id="regionBadge">&#128205; &mdash;</div>
+    <div class="ml-auto flex items-center gap-3">
+      <div class="region-badge" id="regionBadge">&#128205; &mdash;</div>
+      <button id="pdfExportBar" class="pdf-export-btn" onclick="exportPDF()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Export PDF
+      </button>
+    </div>
   </div>
 
   <!-- Two-column layout -->
@@ -1140,6 +1156,52 @@ function updateProfileChips(active) {
     const el = document.getElementById('chip-' + n);
     if (el) el.classList.toggle('active', n === active);
   });
+}
+
+async function exportPDF() {
+  const btn = document.getElementById('pdfExportBar');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="12"/></svg> Generating…';
+
+  // Make sure sources accordion is open so it renders in PDF
+  const sourcesBody = document.getElementById('sourcesBody');
+  const wasHidden = sourcesBody.classList.contains('hidden');
+  sourcesBody.classList.remove('hidden');
+
+  // Brief pause to let charts fully render
+  await new Promise(r => setTimeout(r, 300));
+
+  const element = document.getElementById('calcSection');
+  const opLabel = (STATE.opType === 'cowcalf' ? 'Cow-Calf' : 'Stocker') + ' Operation';
+  const region = REGIONS[STATE.region] ? REGIONS[STATE.region].name : '';
+  const filename = `Drover-ROI-${opLabel.replace(/\s/g,'-')}-${region.replace(/[^A-Za-z]/g,'-')}.pdf`;
+
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#F2F6FC',
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+
+  try {
+    await html2pdf().set(opt).from(element).save();
+  } catch(e) {
+    console.error('PDF export failed:', e);
+    alert('PDF export failed. Try using your browser\'s Print → Save as PDF instead.');
+  }
+
+  // Restore sources state
+  if (wasHidden) sourcesBody.classList.add('hidden');
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Export PDF';
 }
 
 function toggleSources() {
